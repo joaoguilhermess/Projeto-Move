@@ -35,7 +35,7 @@ class Client {
 
 			if (isDir(n)) {
 				await this.SendDirectory(n);
-				this.IterateDir(n);
+				await this.IterateDir(n);
 			} else {
 				await this.SendFile(n);
 			}
@@ -60,8 +60,11 @@ class Client {
 					resolve();
 				} else {
 					console.log("error", e);
+					resolve();
 				}
 			});
+
+			socket.on("end", resolve);
 		});
 	}
 
@@ -86,7 +89,6 @@ Client.setHost(Host, Port);
 
 if (isDir(name)) {
 	Client.SendDirectory(name);
-	console.log("a");
 	Client.IterateDir(name);
 } else {
 	Client.SendFile(name);

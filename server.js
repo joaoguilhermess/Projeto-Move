@@ -28,26 +28,38 @@ var app = net.createServer(function (socket) {
 				socket.fileSize = parseInt(args[2]);
 				socket.current = 0;
 
-				socket.fileStream = fs.createWriteStream(FilesPath + socket.file);
+				if (!fs.existsSync(FilesPath + socket.file)) {
+					socket.fileStream = fs.createWriteStream(FilesPath + socket.file);
 
-				socket.fileStream.write(args.slice(3).join(" "));
+					socket.fileStream.write(args.slice(3).join(" "));
+
+					socket.exists = true;
+				} else {
+					socket.end();
+				}
 			}
 
 		} else if (socket.type == "file") {
-			socket.fileStream.write(data);
+			if (socket.exists) {
+				socket.fileStream.write(data);
 
-			socket.current += data.length;
-		
-			process.stdout.write("\r\x1b[1m\x1b[30m" + "Receiving File: " + socket.file + " " + (socket.current/socket.fileSize * 100).toFixed(1) + "%" + "\x1b[0m");
+				socket.current += data.length;
+			
+				process.stdout.write("\r\x1b[1m\x1b[30m" + "Receiving File: " + socket.file + " " + (socket.current/socket.fileSize * 100).toFixed(1) + "%" + "\x1b[0m");
+			}
 		}
 	});
 
 	socket.on("end", function() {
 		if (socket.type == "dir") {
-			console.log("\nDirecory Received:", socket.dir);
+			console.log("\nDirecory Received:", socket.dir.replaceAll("?", " "));
 		} else {
-			console.log("\nFile Received:", socket.file);
-			socket.fileStream.close();
+			if (socket.exists) {
+				console.log("\nFile Received:", socket.file);
+				socket.fileStream.close();
+			} else {
+				console.log("\nFile Ignored:", socket.file);
+			}
 		}
 	});
 });
