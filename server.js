@@ -11,8 +11,7 @@ var app = net.createServer(function (socket) {
 	}
 
 	socket.on("data", function(data) {
-
-		if (!socket.file) {
+		if (!socket.realFile) {
 			var args = data.toString().split(">");
 			
 			if (args[0] == "dir") {
@@ -25,11 +24,19 @@ var app = net.createServer(function (socket) {
 			} else { 
 				socket.type = "file";
 				socket.file = args[1].replaceAll("?", " ");
+				socket.realFile = FilesPath + socket.file;
 				socket.fileSize = parseInt(args[2]);
 				socket.current = 0;
 
-				if (!fs.existsSync(FilesPath + socket.file)) {
-					socket.fileStream = fs.createWriteStream(FilesPath + socket.file);
+				if (fs.existsSync(socket.realFile)) {
+					if (fs.statSync(socket.realFile).size != socket.fileSize) {
+						console.log("\nInvalid File:", socket.file, "Deleting...");
+						fs.unlinkSync(socket.realFile);
+					}
+				}
+				
+				if (!fs.existsSync(socket.realFile)) {
+					socket.fileStream = fs.createWriteStream(socket.realFile);
 
 					socket.fileStream.write(args.slice(3).join(" "));
 
@@ -56,11 +63,15 @@ var app = net.createServer(function (socket) {
 		} else {
 			if (socket.exists) {
 				socket.fileStream.close();
-				if (fs.statSync(socket.file).size == fileSize) {
-					console.log("\nFile Received:", socket.file);
+				if (fs.existsSync(socket.realFile)) {
+					if (fs.statSync(socket.realFile).size == socket.fileSize) {
+						console.log("\nFile Received:", socket.file);
+					} else {
+						console.log("\nError Receiving File:", socket.file);
+						fs.unlinkSync(socket.realFile);
+					}
 				} else {
-					console.log("\nError Receiving File:", socket.file);
-					fs.unlinkSync(socket.file);
+					console.log("\nWTF:", socket.file);
 				}
 			} else {
 				console.log("\nFile Ignored:", socket.file);
