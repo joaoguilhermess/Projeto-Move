@@ -3,7 +3,7 @@ const fs = require("fs");
 const stream = require("stream");
 
 const Port = 6000;
-const Host = "192.168.0.107";
+const Host = "192.168.0.105";
 
 function isDir(name) {
 	return fs.statSync(name).isDirectory();
@@ -46,7 +46,7 @@ class Client {
 		var socket = await this.connect();
 
 		return new Promise(function(resolve, reject) {
-			console.log("Sending File:", name);
+			console.log("\r\x1b[1m\x1b[30m" + "Sending File: " + name + "\x1b[0m");
 
 			socket.write("file>" + name.replaceAll(" ", "?") + ">" + fs.statSync(name).size);
 
@@ -54,7 +54,7 @@ class Client {
 
 			stream.pipeline(fileStream, socket, function(e) {
 				if (!e) {
-					console.log("File Sent:", name);
+					console.log("\nFile Sent:", name);
 					socket.end();
 					fileStream.close();
 					resolve();

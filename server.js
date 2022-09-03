@@ -55,8 +55,13 @@ var app = net.createServer(function (socket) {
 			console.log("\nDirecory Received:", socket.dir.replaceAll("?", " "));
 		} else {
 			if (socket.exists) {
-				console.log("\nFile Received:", socket.file);
 				socket.fileStream.close();
+				if (fs.statSync(socket.file).size == fileSize) {
+					console.log("\nFile Received:", socket.file);
+				} else {
+					console.log("\nError Receiving File:", socket.file);
+					fs.unlinkSync(socket.file);
+				}
 			} else {
 				console.log("\nFile Ignored:", socket.file);
 			}
