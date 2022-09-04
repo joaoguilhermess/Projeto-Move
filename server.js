@@ -40,6 +40,8 @@ var app = net.createServer(function (socket) {
 
 					socket.fileStream.write(args.slice(3).join(" "));
 
+					// socket.write("Send More");
+				
 					socket.exists = true;
 				} else {
 					socket.end();
@@ -49,6 +51,8 @@ var app = net.createServer(function (socket) {
 		} else if (socket.type == "file") {
 			if (socket.exists) {
 				socket.fileStream.write(data);
+
+				socket.write("Send More");
 
 				socket.current += data.length;
 			

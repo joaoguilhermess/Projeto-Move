@@ -48,23 +48,59 @@ class Client {
 		return new Promise(function(resolve, reject) {
 			console.log("\r\x1b[1m\x1b[30m" + "Sending File: " + name + "\x1b[0m");
 
-			socket.write("file>" + name.replaceAll(" ", "?") + ">" + fs.statSync(name).size);
+			var size = fs.statSync(name).size;
+
+			socket.write("file>" + name.replaceAll(" ", "?") + ">" + size);
 
 			var fileStream = fs.createReadStream(name);	
 
-			stream.pipeline(fileStream, socket, function(e) {
-				if (!e) {
-					console.log("\nFile Sent:", name);
-					socket.end();
-					fileStream.close();
-					resolve();
-				} else {
-					console.log("error", e);
-					resolve();
+			// stream.pipeline(fileStream, socket, function(e) {
+			// 	if (!e) {
+			// 		console.log("\nFile Sent:", name);
+			// 		socket.end();
+			// 		fileStream.close();
+			// 		resolve();
+			// 	} else {
+			// 		console.log("error", e);
+			// 		resolve();
+			// 	}
+			// });
+
+			var current = 0;
+			var write = true;
+
+			fileStream.on("data", function(data) {
+				if (write) {
+					socket.write(data);
+
+					current += data.length;
+
+					process.stdout.write("\r\x1b[1m\x1b[30m" + "Sending File: " + name + " " + (current/size * 100).toFixed(1) + "%" + "\x1b[0m");
+
+					fileStream.pause();
 				}
 			});
 
-			socket.on("end", resolve);
+			fileStream.on("error", function(e) {
+				console.log("error", e);
+				resolve();
+			});
+
+			fileStream.on("end", function() {
+				console.log("\nFile Sent:", name);
+				socket.end();
+				fileStream.close();
+				resolve();
+			});
+
+			socket.on("data", function() {
+				fileStream.resume();
+			});
+
+			socket.on("end", function() {
+				write = false;
+				resolve();
+			});
 		});
 	}
 
